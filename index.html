@@ -1,0 +1,632 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Calendário de Entregáveis do PL Connection</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;500;700;900&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --turquesa: #0FC2C0; --neon-turquesa: #53F3E4; --turquesa-escuro: #016071; --turquesa-quase-preto: #002831;
+    --magenta: #9B237F; --roxo: #7C5DA7; --lilas: #C487F7; --branco: #FFFFFF; --turquesa-chumbo: #304545;
+    --cinza-escuro: #212323; --cinza-medio: #494F4F; --turquesa-claro: #EAF9F8; --cinza-claro: #F2F6F5;
+    --magenta-claro: #F9F4F7; --radius-sm: 4px; --radius-md: 8px; --radius-lg: 16px;
+    --shadow-soft: 0 2px 8px rgba(1, 96, 113, 0.08); --shadow-strong: 0 8px 24px rgba(1, 96, 113, 0.16);
+    --sp-cor: #C9962C; --gs1-cor: #3E6D9C; --concluido: #F0B429;
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; font-family: 'Roboto', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; color: #000; background: var(--cinza-claro); }
+  header { background: linear-gradient(135deg, var(--turquesa-quase-preto) 0%, var(--turquesa-escuro) 100%); color: var(--branco); padding: 28px 40px; }
+  header .eyebrow { font-size: 12px; letter-spacing: 0.12em; text-transform: uppercase; color: var(--neon-turquesa); font-weight: 700; margin-bottom: 6px; }
+  header h1 { margin: 0; font-size: 28px; font-weight: 900; letter-spacing: -0.01em; }
+
+  .tab-bar { display: flex; gap: 4px; padding: 0 40px; background: var(--turquesa-quase-preto); }
+  .tab-btn {
+    color: rgba(255,255,255,0.6); background: transparent; border: none; padding: 14px 22px;
+    font-family: 'Roboto', sans-serif; font-size: 13.5px; font-weight: 700; cursor: pointer;
+    border-bottom: 3px solid transparent; transition: all .15s ease;
+  }
+  .tab-btn.active { color: var(--branco); border-bottom-color: var(--neon-turquesa); }
+  .tab-btn:hover { color: var(--branco); }
+
+  main { max-width: 1400px; margin: 0 auto; padding: 32px 40px 80px; }
+  .tab-panel { display: none; }
+  .tab-panel.active { display: block; }
+
+  .filter-row-label { font-size: 10px; text-transform: uppercase; letter-spacing: .08em; font-weight: 700; color: var(--cinza-medio); margin: 0 0 8px 2px; }
+  .filter-bar { display: flex; gap: 10px; flex-wrap: wrap; margin-bottom: 16px; }
+  .filter-chip {
+    border: 2px solid var(--turquesa-escuro); background: var(--branco); color: var(--turquesa-escuro);
+    padding: 7px 16px; border-radius: 999px; font-size: 12.5px; font-weight: 500; cursor: pointer;
+    transition: all 0.15s ease; display: flex; align-items: center; gap: 8px;
+  }
+  .filter-chip .dot { width: 8px; height: 8px; border-radius: 50%; }
+  .filter-chip.active { background: var(--turquesa-escuro); color: var(--branco); }
+  .filter-chip.active .dot { outline: 2px solid rgba(255,255,255,0.6); }
+  .filter-chip.demand-chip { border-color: var(--roxo); color: var(--roxo); }
+  .filter-chip.demand-chip.active { background: var(--roxo); color: #fff; }
+  .filter-group { margin-bottom: 22px; }
+  .legend-yellow { display:flex; align-items:center; gap:6px; font-size:11.5px; color: var(--cinza-medio); margin-bottom: 20px; }
+  .legend-yellow .sw { width:12px; height:12px; border-radius:3px; background:var(--concluido); }
+
+  section.block { margin-bottom: 48px; }
+  .block-title { font-size: 12px; text-transform: uppercase; letter-spacing: 0.1em; font-weight: 700; color: var(--turquesa-chumbo); margin-bottom: 16px; display: flex; align-items: center; gap: 10px; }
+  .block-title::after { content: ''; flex: 1; height: 1px; background: rgba(48,69,69,0.15); }
+
+  .months-wrap { display: flex; flex-direction: column; gap: 24px; }
+  .month-card { background: var(--branco); border-radius: var(--radius-md); box-shadow: var(--shadow-soft); padding: 20px; }
+  .month-card h3 { margin: 0 0 14px 0; color: var(--turquesa-escuro); font-size: 16px; font-weight: 700; }
+  .weekday-row, .day-row { display: grid; grid-template-columns: repeat(7, 1fr); gap: 6px; }
+  .day-row { margin-bottom: 6px; align-items: stretch; }
+  .weekday-row div { font-size: 10px; text-transform: uppercase; color: var(--cinza-medio); text-align: center; font-weight: 700; padding-bottom: 6px; }
+  .day-cell {
+    min-height: 100px; border-radius: var(--radius-sm); background: var(--cinza-claro);
+    padding: 6px 6px; display: flex; flex-direction: column; gap: 3px;
+  }
+  .day-cell.empty { background: transparent; }
+  .day-cell.weekend { background: repeating-linear-gradient(135deg, var(--cinza-claro), var(--cinza-claro) 6px, #e8ecec 6px, #e8ecec 12px); }
+  .day-cell.has-events { background: var(--turquesa-claro); }
+  .day-cell.event-day { outline: 2px solid var(--magenta); }
+  .day-num { font-size: 11px; font-weight: 700; color: var(--turquesa-chumbo); margin-bottom: 2px; }
+  .day-num .tag-evento { color: var(--magenta); font-weight: 900; font-size: 9px; margin-left: 4px; text-transform: uppercase; }
+  .mini-item {
+    font-size: 9.5px; line-height: 1.25; padding: 2px 4px; border-radius: 3px; color: #fff;
+    overflow: hidden; text-overflow: ellipsis; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical;
+    cursor: pointer;
+  }
+  .mini-item:hover { filter: brightness(1.12); }
+  .mini-item.concluido { background: var(--concluido) !important; color: #3a2a00 !important; font-weight: 700; }
+
+  .modal-overlay {
+    display: none; position: fixed; inset: 0; background: rgba(0,40,49,0.55);
+    align-items: center; justify-content: center; z-index: 50; padding: 24px;
+  }
+  .modal-overlay.open { display: flex; }
+  .modal-box {
+    background: var(--branco); border-radius: var(--radius-lg); max-width: 560px; width: 100%;
+    max-height: 80vh; overflow-y: auto; padding: 28px; box-shadow: var(--shadow-strong);
+  }
+  .modal-box .modal-origem { font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.06em; margin-bottom: 6px; }
+  .modal-box h3 { margin: 0 0 4px 0; color: var(--turquesa-escuro); font-size: 18px; }
+  .modal-box .modal-sub { font-size: 12px; color: var(--cinza-medio); margin-bottom: 6px; }
+  .modal-box .modal-meta { font-size: 12.5px; color: #333; margin-top: 10px; line-height: 1.6; }
+  .modal-box .modal-meta strong { color: var(--turquesa-chumbo); }
+  .modal-close {
+    float: right; cursor: pointer; font-size: 13px; color: var(--turquesa-escuro); font-weight: 700;
+    border: 1px solid var(--turquesa-escuro); border-radius: 999px; padding: 4px 12px;
+  }
+  .conclude-btn {
+    margin-top: 16px; width: 100%; padding: 11px; border-radius: var(--radius-sm); border: none;
+    font-size: 13px; font-weight: 700; cursor: pointer; background: var(--turquesa-escuro); color: #fff;
+  }
+  .conclude-btn.is-done { background: var(--concluido); color: #3a2a00; }
+  .client-chip-list { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 10px; }
+  .client-chip { background: var(--cinza-claro); font-size: 11.5px; padding: 4px 10px; border-radius: 999px; color: #222; }
+  .client-chip.feito { background: var(--concluido); color: #3a2a00; font-weight: 700; }
+
+  .card { background: var(--branco); border-radius: var(--radius-md); box-shadow: var(--shadow-soft); padding: 24px; margin-bottom: 24px; border-top: 3px solid var(--turquesa); }
+  .card .eyebrow-sm { font-size: 10.5px; text-transform: uppercase; letter-spacing: .08em; font-weight: 700; color: var(--roxo); margin-bottom: 6px; }
+  .card h2 { margin: 0 0 8px 0; color: var(--turquesa-escuro); font-size: 19px; }
+  .card p.desc { font-size: 13px; color: var(--cinza-medio); margin: 0 0 16px 0; max-width: 720px; }
+  .link-box {
+    display: flex; align-items: center; gap: 10px; background: var(--cinza-claro); border-radius: var(--radius-sm);
+    padding: 10px 14px; font-size: 12.5px; color: var(--turquesa-chumbo); flex-wrap: wrap;
+  }
+  .link-box code { flex: 1; min-width: 200px; word-break: break-all; }
+  .btn-primary { background: var(--turquesa); color: #fff; border: none; padding: 8px 16px; border-radius: var(--radius-sm); font-weight: 500; font-size: 12.5px; cursor: pointer; white-space: nowrap; }
+  .btn-secondary { background: transparent; color: var(--turquesa-escuro); border: 2px solid var(--turquesa-escuro); padding: 7px 15px; border-radius: var(--radius-sm); font-size: 12.5px; font-weight: 500; cursor: pointer; text-decoration: none; display: inline-block; }
+  .drive-list { list-style: none; padding: 0; margin: 12px 0; font-size: 13px; color: #222; }
+  .drive-list li { padding: 5px 0; padding-left: 18px; position: relative; }
+  .drive-list li::before { content: '•'; color: var(--turquesa); position: absolute; left: 0; }
+
+  table.guide-table { width: 100%; border-collapse: collapse; font-size: 12.5px; margin-top: 8px; }
+  table.guide-table th { background: var(--turquesa-escuro); color: #fff; padding: 10px 12px; text-align: left; font-weight: 700; }
+  table.guide-table td { padding: 10px 12px; border-bottom: 1px solid rgba(48,69,69,0.08); vertical-align: top; }
+  table.guide-table tr:hover td { background: var(--turquesa-claro); }
+
+  .week-timeline { display: flex; flex-direction: column; gap: 10px; margin-top: 10px; }
+  .week-row { display: flex; gap: 16px; border-left: 3px solid var(--roxo); background: var(--cinza-claro); border-radius: 0 var(--radius-sm) var(--radius-sm) 0; padding: 12px 16px; }
+  .week-row .week-label { min-width: 170px; font-size: 11px; font-weight: 700; color: var(--roxo); text-transform: uppercase; letter-spacing: .04em; }
+  .week-row .week-title { font-size: 13px; font-weight: 700; color: var(--turquesa-chumbo); margin-bottom: 4px; }
+  .week-row ul { margin: 0; padding-left: 18px; font-size: 12.5px; color: #333; }
+  .week-row li { margin-bottom: 2px; }
+
+  .faq-item { border-bottom: 1px solid rgba(48,69,69,0.1); padding: 12px 0; cursor: pointer; }
+  .faq-item .faq-q { font-size: 13.5px; font-weight: 500; color: var(--turquesa-chumbo); display: flex; justify-content: space-between; align-items: center; }
+  .faq-item .faq-q::after { content: '+'; font-size: 18px; color: var(--turquesa); }
+  .faq-item.open .faq-q::after { content: '–'; }
+  .faq-a { display: none; font-size: 12.5px; color: #333; margin-top: 8px; line-height: 1.6; padding-left: 4px; }
+  .faq-item.open .faq-a { display: block; }
+
+  footer { background: var(--turquesa-claro); padding: 20px 40px; display: flex; justify-content: space-between; align-items: center; font-size: 12px; color: var(--turquesa-chumbo); }
+  footer strong { color: var(--turquesa); }
+
+  @media (max-width: 900px) {
+    main { padding: 24px 16px 60px; }
+    header, .tab-bar { padding-left: 16px; padding-right: 16px; }
+    .day-cell { min-height: 80px; }
+    .week-row { flex-direction: column; gap: 6px; }
+    table.guide-table { font-size: 11.5px; }
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="eyebrow">PL Connection 2026 — Amicci</div>
+  <h1>Calendário de Entregáveis do PL Connection</h1>
+</header>
+
+<div class="tab-bar">
+  <button class="tab-btn active" data-tab="calendario">Entregáveis</button>
+  <button class="tab-btn" data-tab="apoiadores">Apoiadores</button>
+</div>
+
+<main>
+
+  <div class="tab-panel active" id="tab-calendario">
+    <div class="filter-group">
+      <div class="filter-row-label">Filtrar por origem</div>
+      <div class="filter-bar" id="filterBar">
+        <div class="filter-chip active" data-origem="Todos"><span class="dot" style="background:#555"></span>Todos</div>
+        <div class="filter-chip" data-origem="Drylock"><span class="dot" style="background:var(--turquesa)"></span>Drylock</div>
+        <div class="filter-chip" data-origem="Zinho"><span class="dot" style="background:var(--magenta)"></span>Zinho</div>
+        <div class="filter-chip" data-origem="Expositores"><span class="dot" style="background:var(--roxo)"></span>Expositores</div>
+        <div class="filter-chip" data-origem="Super Varejo"><span class="dot" style="background:var(--lilas)"></span>Super Varejo</div>
+        <div class="filter-chip" data-origem="SP Negócios"><span class="dot" style="background:var(--sp-cor)"></span>SP Negócios</div>
+        <div class="filter-chip" data-origem="GS1"><span class="dot" style="background:var(--gs1-cor)"></span>GS1</div>
+      </div>
+    </div>
+
+    <div class="filter-group">
+      <div class="filter-row-label">Filtrar por demanda</div>
+      <div class="filter-bar" id="demandFilterBar"></div>
+    </div>
+
+    <div class="legend-yellow"><span class="sw"></span> Amarelo = já concluído (feito na planilha ou marcado manualmente)</div>
+
+    <section class="block">
+      <div class="block-title">Calendário — Julho, Agosto e Setembro 2026</div>
+      <div class="months-wrap" id="monthsWrap"></div>
+    </section>
+  </div>
+
+  <div class="tab-panel" id="tab-apoiadores">
+
+    <div class="card" style="border-top-color: var(--magenta);">
+      <div class="eyebrow-sm" style="color:var(--magenta);">Ação mais importante</div>
+      <h2>Divulgue o credenciamento para a sua base de contatos</h2>
+      <p class="desc">Este é o objetivo central da parceria: leve o link rastreável abaixo para e-mail marketing, redes sociais e demais canais da sua empresa.</p>
+      <div class="link-box">
+        <code id="credLink">https://credenciamento2.ehub.net.br/acesso/cadastro_feira.php#parceirosamicci</code>
+        <button class="btn-primary" onclick="copyCred()">Copiar link</button>
+        <a class="btn-secondary" href="https://credenciamento2.ehub.net.br/acesso/cadastro_feira.php#parceirosamicci" target="_blank" rel="noopener">Abrir link ↗</a>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="eyebrow-sm">Materiais oficiais</div>
+      <h2>Pasta com todos os arquivos da parceria</h2>
+      <p class="desc">Key visual, logos do evento, paleta de cores e fontes ficam centralizados na pasta do Drive. Use somente os arquivos oficiais desta pasta nas suas peças.</p>
+      <ul class="drive-list">
+        <li>Key visual (guia de aplicação em PDF)</li>
+        <li>Logos do PL Connection</li>
+        <li>Paleta de cores oficial</li>
+        <li>Fontes do evento</li>
+      </ul>
+      <a class="btn-secondary" href="https://drive.google.com/drive/folders/18-aD4B4WoItCvPAuK4gs1SW43kZU0cHj?usp=drive_link" target="_blank" rel="noopener">Acessar pasta no Drive ↗</a>
+    </div>
+
+    <div class="card">
+      <div class="eyebrow-sm">Seção 1</div>
+      <h2>Pacotes de divulgação — cota Apoiadores</h2>
+      <p class="desc">Volume de entregas previsto para o pacote de Apoiadores, por formato.</p>
+      <table class="guide-table">
+        <tr><th>Formato</th><th>Cota — Apoiadores</th></tr>
+        <tr><td>LinkedIn</td><td>2 posts + 1 repost</td></tr>
+        <tr><td>Instagram — Stories</td><td>2 stories</td></tr>
+        <tr><td>Instagram — Feed</td><td>1 post</td></tr>
+        <tr><td>Instagram — Reels</td><td>Opcional</td></tr>
+        <tr><td>E-mail marketing</td><td>4 disparos (2 endomarketing interno + 2 público externo)</td></tr>
+        <tr><td>Site — Matéria</td><td>Opcional</td></tr>
+      </table>
+    </div>
+
+    <div class="card">
+      <div class="eyebrow-sm">Seção 2</div>
+      <h2>Direcionamento de conteúdo por formato</h2>
+      <p class="desc">Objetivo e ângulo de cada entrega. Todos os CTAs apontam para o link rastreável de credenciamento.</p>
+      <table class="guide-table">
+        <tr><th>Formato</th><th>Cota</th><th>Direção (objetivo/ângulo)</th></tr>
+        <tr><td>LinkedIn</td><td>2 posts + 1 repost</td><td>Post 1: anúncio do apoio + CTA credenciamento. Post 2: contagem regressiva + CTA credenciamento. Repost: reforço do post de contagem regressiva.</td></tr>
+        <tr><td>Instagram Stories</td><td>2 stories</td><td>1 story de anúncio do apoio + 1 story de contagem regressiva/reforço de prazo. Todos com link rastreável.</td></tr>
+        <tr><td>Instagram Feed</td><td>1 post</td><td>Anúncio do apoio, com CTA de inscrição (link rastreável).</td></tr>
+        <tr><td>Instagram Reels</td><td>Opcional</td><td>Se produzido: takes durante o evento.</td></tr>
+        <tr><td>E-mail marketing</td><td>4 disparos</td><td>Evoluir ao longo dos disparos: 1º anúncio → 2º palestrantes → 3º tema das palestras → 4º urgência/último prazo.</td></tr>
+        <tr><td>Site — Matéria</td><td>Opcional</td><td>Se produzida: pauta institucional sobre o encontro varejo-indústria, com citação do parceiro.</td></tr>
+      </table>
+    </div>
+
+    <div class="card">
+      <div class="eyebrow-sm">Seção 3</div>
+      <h2>Calendário de entregas — a partir de 31/07/2026</h2>
+      <p class="desc">Sequência sugerida até o evento (25 e 26/08). O importante é preservar a ordem: anúncio → palestrantes → tema das palestras → urgência.</p>
+      <div class="week-timeline">
+        <div class="week-row">
+          <div class="week-label">Semana 1 · a partir de 31/07</div>
+          <div>
+            <div class="week-title">Largada da campanha</div>
+            <ul>
+              <li>LinkedIn — Post 1 (anúncio do apoio + CTA credenciamento)</li>
+              <li>Instagram Feed — post único (anúncio + CTA inscrição)</li>
+              <li>Instagram Stories 1 (anúncio do apoio)</li>
+              <li>E-mail 1/4 (anúncio)</li>
+            </ul>
+          </div>
+        </div>
+        <div class="week-row">
+          <div class="week-label">Semana 2</div>
+          <div>
+            <div class="week-title">Palestrantes</div>
+            <ul><li>E-mail 2/4 — divulgação dos painéis e temas de palestras (CTA credenciamento)</li></ul>
+          </div>
+        </div>
+        <div class="week-row">
+          <div class="week-label">Semana 3</div>
+          <div>
+            <div class="week-title">Reforço de conteúdo</div>
+            <ul><li>E-mail 3/4 — reforço do tema das palestras (CTA credenciamento)</li></ul>
+          </div>
+        </div>
+        <div class="week-row">
+          <div class="week-label">Semana 4 · reta final</div>
+          <div>
+            <div class="week-title">Contagem regressiva</div>
+            <ul>
+              <li>LinkedIn — Post 2 (contagem regressiva + CTA credenciamento)</li>
+              <li>Instagram Stories 2 (contagem regressiva/reforço de prazo)</li>
+              <li>E-mail 4/4 (urgência/último prazo)</li>
+            </ul>
+          </div>
+        </div>
+        <div class="week-row">
+          <div class="week-label">Véspera / dias do evento</div>
+          <div>
+            <div class="week-title">Sustentação</div>
+            <ul><li>LinkedIn — Repost (reforço do post de contagem regressiva)</li></ul>
+          </div>
+        </div>
+        <div class="week-row">
+          <div class="week-label">25 e 26/08 · durante o evento</div>
+          <div>
+            <div class="week-title">Cobertura ao vivo</div>
+            <ul><li>Instagram Reels, se produzido (takes durante o evento)</li></ul>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="eyebrow-sm">Seção 4</div>
+      <h2>FAQ de parceiros</h2>
+      <p class="desc">Referência rápida para dúvidas frequentes do time de comunicação do apoiador.</p>
+      <div id="faqList">
+        <div class="faq-item">
+          <div class="faq-q">O que o parceiro entrega em cada pacote?</div>
+          <div class="faq-a">As entregas descritas na tabela de pacotes (Seção 1). O item mais importante é a divulgação do credenciamento na base de e-mails do apoiador.</div>
+        </div>
+        <div class="faq-item">
+          <div class="faq-q">Como recebo os materiais?</div>
+          <div class="faq-a">Em um pacote único (pasta do Drive), após aprovação interna da parceria. Key visual e logos ficam disponíveis na pasta "Materiais oficiais" acima.</div>
+        </div>
+        <div class="faq-item">
+          <div class="faq-q">Como confirmo que publiquei?</div>
+          <div class="faq-a">Enviando o link ou print da publicação para o registro de acompanhamento da parceria (ver "Já publicou?" abaixo).</div>
+        </div>
+      </div>
+      <div style="margin-top:18px; padding-top:14px; border-top: 1px solid rgba(48,69,69,0.1);">
+        <div style="font-size:13.5px; font-weight:700; color:var(--turquesa-escuro); margin-bottom:6px;">Já publicou?</div>
+        <p class="desc" style="margin-bottom:12px;">Envie o link ou print de cada publicação para a coordenadora da parceria, para manter o registro de acompanhamento atualizado.</p>
+        <a class="btn-secondary" href="mailto:thayna.cunha@amicci.com.br?subject=PL%20Connection%202026%20-%20Confirma%C3%A7%C3%A3o%20de%20publica%C3%A7%C3%A3o%20(Apoiador)">Enviar confirmação ↗</a>
+      </div>
+    </div>
+
+  </div>
+
+</main>
+
+<footer>
+  <div style="display:flex;align-items:center;gap:10px;">
+    <span>Marcas próprias <strong>fortes</strong> com Amicci</span>
+  </div>
+  <span>PL Connection 2026</span>
+</footer>
+
+<div class="modal-overlay" id="modalOverlay">
+  <div class="modal-box">
+    <span class="modal-close" id="modalClose">Fechar ✕</span>
+    <div class="modal-origem" id="modalOrigem"></div>
+    <h3 id="modalTitle"></h3>
+    <div class="modal-sub" id="modalSub"></div>
+    <div class="modal-meta" id="modalMeta"></div>
+    <div class="client-chip-list" id="modalClients"></div>
+    <button class="conclude-btn" id="concludeBtn">Marcar como concluído</button>
+  </div>
+</div>
+
+<script>
+const DATA = {"events": [{"origem": "Drylock", "entregavel": "Recebimento das artes/briefing para os 2 posts de feed pré-evento (Instagram/LinkedIn)", "direcao": "Drylock → Amicci", "obs": "Ou aprovação das artes criadas pela Amicci com logo Drylock", "responsavel": "Thayna", "prefixo": "", "year": 2026, "month": 7, "day": 28, "demandTag": "Posts"}, {"origem": "Drylock", "entregavel": "Validação dos posts de feed pré-evento pela Drylock", "direcao": "Drylock", "obs": "Prazo máximo para não atrasar publicação", "responsavel": null, "prefixo": "", "year": 2026, "month": 8, "day": 4, "demandTag": "Posts"}, {"origem": "Drylock", "entregavel": "Publicação do 1º post de feed pré-evento", "direcao": "Amicci", "obs": "Anúncio de patrocinador e naming", "responsavel": "Thayna", "prefixo": "", "year": 2026, "month": 8, "day": 11, "demandTag": "Posts"}, {"origem": "Drylock", "entregavel": "Recebimento/validação das artes para os 3 stories pré-evento", "direcao": "Drylock ↔ Amicci", "obs": "Stories para Instagram/WhatsApp", "responsavel": "Thayna", "prefixo": "", "year": 2026, "month": 8, "day": 11, "demandTag": "Stories"}, {"origem": "Drylock", "entregavel": "Publicação dos stories pré-evento (escalonado)", "direcao": "Amicci", "obs": "Distribuir ao longo das semanas pré-evento", "responsavel": null, "prefixo": "", "year": 2026, "month": 8, "day": 12, "demandTag": "Stories"}, {"origem": "Drylock", "entregavel": "Publicação dos stories pré-evento (escalonado)", "direcao": "Amicci", "obs": "Distribuir ao longo das semanas pré-evento", "responsavel": null, "prefixo": "", "year": 2026, "month": 8, "day": 18, "demandTag": "Stories"}, {"origem": "Drylock", "entregavel": "Publicação dos stories pré-evento (escalonado)", "direcao": "Amicci", "obs": "Distribuir ao longo das semanas pré-evento", "responsavel": null, "prefixo": "", "year": 2026, "month": 8, "day": 24, "demandTag": "Stories"}, {"origem": "Drylock", "entregavel": "Publicação do 2º post de feed pré-evento", "direcao": "Amicci", "obs": "Contagem regressiva / destaque do patrocinador master", "responsavel": "Thayna", "prefixo": "", "year": 2026, "month": 8, "day": 18, "demandTag": "Posts"}, {"origem": "Drylock", "entregavel": "Recebimento do conteúdo e aprovação do 1º e 2º e-mails marketing (pré-evento)", "direcao": "Drylock ↔ Amicci", "obs": "Disparos previstos para semanas pré-evento", "responsavel": "Thayna", "prefixo": "", "year": 2026, "month": 8, "day": 4, "demandTag": "Email Marketing"}, {"origem": "Drylock", "entregavel": "Disparo do 1º e-mail marketing pré-evento (base de visitantes)", "direcao": "Amicci", "obs": "Com destaque ao patrocinador master Drylock", "responsavel": "Thayna", "prefixo": "", "year": 2026, "month": 8, "day": 11, "demandTag": "Email Marketing"}, {"origem": "Drylock", "entregavel": "Disparo do 2º e-mail marketing pré-evento", "direcao": "Amicci", "obs": "Lembrete final + programação", "responsavel": "Thayna", "prefixo": "", "year": 2026, "month": 8, "day": 19, "demandTag": "Email Marketing"}, {"origem": "Drylock", "entregavel": "Confirmação do anúncio no Guia do Visitante e banner no site (home + credenciamento)", "direcao": "Amicci", "obs": "Receber arte/logo final da Drylock para inserção", "responsavel": "Thayna + Livia", "prefixo": "", "year": 2026, "month": 7, "day": 28, "demandTag": "Banner"}, {"origem": "Drylock", "entregavel": "Publicação do banner da Drylock no site do evento (home e página de credenciamento)", "direcao": "Amicci", "obs": "Manter até após o evento", "responsavel": "Thayna", "prefixo": "", "year": 2026, "month": 8, "day": 4, "demandTag": "Banner"}, {"origem": "Drylock", "entregavel": "Disparo do 3º e-mail marketing pós-evento (agradecimento + resultados)", "direcao": "Amicci", "obs": "Com destaque ao patrocinador master", "responsavel": "Thayna", "prefixo": "Prazo até", "year": 2026, "month": 9, "day": 5, "demandTag": "Email Marketing"}, {"origem": "Drylock", "entregavel": "Envio da seleção de fotos oficiais do evento à Drylock", "direcao": "Amicci → Drylock", "obs": null, "responsavel": "Thayna", "prefixo": "Prazo até", "year": 2026, "month": 9, "day": 5, "demandTag": "Fotos Oficiais"}, {"origem": "Drylock", "entregavel": "Entrega do vídeo institucional resumo pós-evento (exclusivo Drylock)", "direcao": "Amicci → Drylock", "obs": "Edição exclusiva com protagonismo da marca", "responsavel": "Thayna", "prefixo": "Prazo até", "year": 2026, "month": 9, "day": 12, "demandTag": "Vídeo Institucional"}, {"origem": "Drylock", "entregavel": "Entrega do Relatório Personalizado de Impacto", "direcao": "Amicci → Drylock", "obs": "Métricas de alcance, engajamento digital, público presencial", "responsavel": null, "prefixo": "Prazo até", "year": 2026, "month": 9, "day": 12, "demandTag": "Relatório"}, {"origem": "Zinho", "entregavel": "Envio de peças de aplicação da marca (materiais, comunicação e ambientação da premiação) para aprovação", "direcao": "Amicci → Zinho", "obs": "Inclui menção institucional no protocolo da premiação e no Guia do Visitante", "responsavel": "Thayna", "prefixo": "", "year": 2026, "month": 8, "day": 4, "demandTag": "Site/Portal"}, {"origem": "Zinho", "entregavel": "Aprovação das peças de comunicação pela Zinho", "direcao": "Zinho", "obs": "Prazo máximo para não atrasar a produção física (peças a entregar pela Zinho conforme Cláusula 3.1)", "responsavel": null, "prefixo": "", "year": 2026, "month": 8, "day": 11, "demandTag": "Outros"}, {"origem": "Zinho", "entregavel": "Destaque como patrocinadora no site da premiação e materiais institucionais", "direcao": "Amicci", "obs": "Data antecipada a pedido — não depende da aprovação final das peças de comunicação", "responsavel": "Thayna", "prefixo": "A partir de", "year": 2026, "month": 7, "day": 20, "demandTag": "Site/Portal"}, {"origem": "Zinho", "entregavel": "Publicação de 1 post de feed + 2 stories pré-evento", "direcao": "Amicci", "obs": "Cobertura digital pré-evento", "responsavel": "Thayna", "prefixo": "", "year": 2026, "month": 8, "day": 20, "demandTag": "Stories"}, {"origem": "Zinho", "entregavel": "Envio do e-mail marketing dedicado (premiação + patrocínio)", "direcao": "Amicci", "obs": "Comunicação exclusiva do patrocínio da Zinho na Premiação MP", "responsavel": null, "prefixo": "", "year": 2026, "month": 8, "day": 20, "demandTag": "Email Marketing"}, {"origem": "Zinho", "entregavel": "Stories durante o dia da premiação", "direcao": "Amicci", "obs": "Cobertura ao vivo, dia do evento", "responsavel": "Thayna", "prefixo": "", "year": 2026, "month": 8, "day": 26, "demandTag": "Stories"}, {"origem": "Zinho", "entregavel": "Inserção da marca nos conteúdos pós-evento (vencedores, materiais de fechamento, recap institucional)", "direcao": "Amicci", "obs": "Materiais de fechamento do evento", "responsavel": null, "prefixo": "", "year": 2026, "month": 9, "day": 2, "demandTag": "Site/Portal"}, {"origem": "Zinho", "entregavel": "Aprovação de peças de comunicação (post, stories, e-mail marketing) dentro do prazo estabelecido", "direcao": "Zinho", "obs": "Necessário para não atrasar produção e publicação", "responsavel": null, "prefixo": "", "year": 2026, "month": 8, "day": 11, "demandTag": "Email Marketing"}], "svEvents": [{"fase": "Pré-evento SuperVarejo", "entregavel": "Participação no podcast SV TÁ ON", "direcao": "SuperVarejo → Amicci", "obs": "Data real confirmada na planilha (antes era placeholder).", "month": 7, "day": 27, "demandTag": "Conteúdo de Palco"}, {"fase": "Pré-evento SuperVarejo", "entregavel": "Até 2 e-mails marketing (Base SuperVarejo)", "direcao": "SuperVarejo → Amicci", "obs": "", "month": 7, "day": 23, "demandTag": "Email Marketing"}, {"fase": "Pré-evento SuperVarejo", "entregavel": "Até 4 publicações em collab redes sociais (Instagram e LinkedIn)", "direcao": "SuperVarejo → Amicci", "obs": "", "month": 7, "day": 30, "demandTag": "Outros"}, {"fase": "Pré-evento SuperVarejo", "entregavel": "Até 1 publicação de matéria pré evento no portal", "direcao": "SuperVarejo → Amicci", "obs": "", "month": 8, "day": 5, "demandTag": "Site/Portal"}, {"fase": "Pré-evento SuperVarejo", "entregavel": "14 inserções de banner na newsletter (2 semanas)", "direcao": "SuperVarejo → Amicci", "obs": "", "month": 8, "day": 6, "demandTag": "Banner"}, {"fase": "Pré-evento Amicci", "entregavel": "1 e-mail marketing para o mailing do evento", "direcao": "Amicci → SuperVarejo", "obs": "", "month": 8, "day": 14, "demandTag": "Email Marketing"}, {"fase": "Durante o evento SuperVarejo", "entregavel": "Laura: Foco no conteúdo dos painéis dentro do aquário (Instagram + shorts YouTube)", "direcao": "SuperVarejo → Amicci", "obs": "Coletar depoimentos", "month": 8, "day": 25, "demandTag": "Outros"}, {"fase": "Durante o evento SuperVarejo", "entregavel": "Nina: Foco na feira (Instagram + Shorts YouTube)", "direcao": "SuperVarejo → Amicci", "obs": "Visita em patrocinadores", "month": 8, "day": 25, "demandTag": "Outros"}, {"fase": "Durante o evento SuperVarejo", "entregavel": "Jornalista: Desenvolvimento de 4 matérias para o portal", "direcao": "SuperVarejo → Amicci", "obs": "", "month": 8, "day": 26, "demandTag": "Site/Portal"}, {"fase": "Durante o evento Amicci", "entregavel": "Exibição de vídeo institucional de até 1 minuto antes dos blocos do palco principal", "direcao": "Amicci → SuperVarejo", "obs": "", "month": 8, "day": 25, "demandTag": "Vídeo Institucional"}, {"fase": "Durante o evento Amicci", "entregavel": "Destaque como Veículo Oficial: site do evento, materiais comerciais e institucionais", "direcao": "Amicci → SuperVarejo", "obs": "", "month": 8, "day": 26, "demandTag": "Site/Portal"}, {"fase": "Pós-evento SuperVarejo", "entregavel": "Participação no podcast SV TÁ ON", "direcao": "SuperVarejo → Amicci", "obs": "", "month": 9, "day": 1, "demandTag": "Conteúdo de Palco"}, {"fase": "Pós-evento SuperVarejo", "entregavel": "Até 1 e-mail marketing", "direcao": "SuperVarejo → Amicci", "obs": "", "month": 9, "day": 2, "demandTag": "Email Marketing"}, {"fase": "Pós-evento SuperVarejo", "entregavel": "Até 4 publicações em collab redes sociais (Instagram e LinkedIn)", "direcao": "SuperVarejo → Amicci", "obs": "", "month": 9, "day": 3, "demandTag": "Outros"}, {"fase": "Pós-evento SuperVarejo", "entregavel": "Até 1 publicação de matéria pró evento no portal - cortes e highlights", "direcao": "SuperVarejo → Amicci", "obs": "", "month": 9, "day": 4, "demandTag": "Site/Portal"}, {"fase": "Pós-evento Amicci", "entregavel": "Participação no podcast SV TÁ ON", "direcao": "Amicci → SuperVarejo", "obs": "", "month": 9, "day": 7, "demandTag": "Conteúdo de Palco"}, {"fase": "Pós-evento Amicci", "entregavel": "Até 1 e-mail marketing", "direcao": "Amicci → SuperVarejo", "obs": "", "month": 9, "day": 8, "demandTag": "Email Marketing"}, {"fase": "Pós-evento Amicci", "entregavel": "Até 4 publicações em collab redes sociais (Instagram e LinkedIn)", "direcao": "Amicci → SuperVarejo", "obs": "", "month": 9, "day": 9, "demandTag": "Outros"}, {"fase": "Pós-evento Amicci", "entregavel": "Até 1 publicação de matéria pró evento no portal", "direcao": "Amicci → SuperVarejo", "obs": "", "month": 9, "day": 9, "demandTag": "Site/Portal"}], "spEvents": [{"entregavel": "Exposição da marca em 100% do material de comunicação", "direcao": "Amicci", "obs": "Único item de comunicação identificado na aba SP Negócios.", "month": 8, "day": 12, "demandTag": "Site/Portal"}], "gs1Events": [{"entregavel": "Divulgação prévia na comunicação do evento", "direcao": "Amicci", "responsavel": "", "obs": "Depende de arte/material enviado pela GS1. Data ainda \"A definir\" na planilha — sugestão de data para reservar o slot.", "month": 8, "day": 18, "demandTag": "Site/Portal"}, {"entregavel": "Menção em palco durante anúncio", "direcao": "Amicci", "responsavel": "", "obs": "\"Dia da palestra\" na planilha — GS1 ainda não tem slot fechado na grade oficial. Sugestão: mesmo dia da visita à sede.", "month": 8, "day": 25, "demandTag": "Conteúdo de Palco"}, {"entregavel": "Entrevista no estúdio", "direcao": "Amicci / GS1", "responsavel": "", "obs": "Planilha indica \"25 ou 26/08/2026\" — agendar horário exato durante o evento.", "month": 8, "day": 25, "demandTag": "Conteúdo de Palco"}], "exhibitorEvents": [{"categoria": "Pré Evento", "demanda": "Banner no Site", "month": 8, "day": 6, "clientes": [{"nome": "Blue Sea Comercio de Produtos Higienicos Ltda", "status": "pendente"}, {"nome": "FUCHS", "status": "pendente"}], "total": 2, "feito": 0, "pendente": 2, "demandTag": "Banner"}, {"categoria": "Pré Evento", "demanda": "Painel / Entrevista / Conteúdo no Palco", "month": 8, "day": 7, "clientes": [{"nome": "PDHB", "status": "pendente"}, {"nome": "Salvatori Industria e Comercio de Cosmeticos", "status": "pendente"}], "total": 2, "feito": 0, "pendente": 2, "demandTag": "Conteúdo de Palco"}, {"categoria": "Pré Evento", "demanda": "Painel / Entrevista / Conteúdo no Palco", "month": 8, "day": 10, "clientes": [{"nome": "MARICOTA\n", "status": "pendente"}], "total": 1, "feito": 0, "pendente": 1, "demandTag": "Conteúdo de Palco"}, {"categoria": "Pré Evento", "demanda": "Stories", "month": 8, "day": 11, "clientes": [{"nome": "FUCHS", "status": "pendente"}, {"nome": "Salvatori Industria e Comercio de Cosmeticos", "status": "pendente"}, {"nome": "MARICOTA\n", "status": "pendente"}], "total": 3, "feito": 0, "pendente": 3, "demandTag": "Stories"}, {"categoria": "Pré Evento", "demanda": "Ingressos / Entrada VIP", "month": 8, "day": 12, "clientes": [{"nome": "FUCHS", "status": "pendente"}], "total": 1, "feito": 0, "pendente": 1, "demandTag": "Credenciais/Convites"}, {"categoria": "Pré Evento", "demanda": "Post (feed)", "month": 8, "day": 13, "clientes": [{"nome": "Apis Vida Industria e Comercio de Produtos Farmaceuticos Ltda", "status": "pendente"}], "total": 1, "feito": 0, "pendente": 1, "demandTag": "Posts"}, {"categoria": "Pré Evento", "demanda": "Post Collab", "month": 8, "day": 14, "clientes": [{"nome": "SUAVIDAD INDUSTRIA DE PAPEL LTDA", "status": "pendente"}, {"nome": "NABB INDUSTRIA E COMERCIO DE COSMETICOS LTDA", "status": "pendente"}, {"nome": "PDHB", "status": "feito"}], "total": 3, "feito": 1, "pendente": 2, "demandTag": "Posts"}, {"categoria": "Pré Evento", "demanda": "Post Collab", "month": 8, "day": 17, "clientes": [{"nome": "Salvatori Industria e Comercio de Cosmeticos", "status": "pendente"}, {"nome": "IDEAL COSMÉTICOS", "status": "pendente"}, {"nome": "MARICOTA\n", "status": "pendente"}], "total": 3, "feito": 0, "pendente": 3, "demandTag": "Posts"}, {"categoria": "Pré Evento", "demanda": "Relatório Pós-Evento", "month": 8, "day": 18, "clientes": [{"nome": "MIX NUTRI", "status": "pendente"}, {"nome": "MONREVE INDUSTRIA DE ALIMENTOS LTDA", "status": "pendente"}, {"nome": "Damapel indústria Comercio e Distribuição de Papel Ltda", "status": "pendente"}, {"nome": "XHIGIE PLUS COTTONBABY INDUSTRIA E COMERCIO LTDA", "status": "pendente"}], "total": 4, "feito": 0, "pendente": 4, "demandTag": "Relatório"}, {"categoria": "Pré Evento", "demanda": "Relatório Pós-Evento", "month": 8, "day": 19, "clientes": [{"nome": "ELEVENTIAL CONSULTORIA EM TECNOLOGIA DA INFORMACAO LTDA", "status": "pendente"}, {"nome": "Dauper", "status": "pendente"}, {"nome": "Cassini Alimentos Ltda", "status": "pendente"}, {"nome": "ZINHO INDUSTRIA E COMERCIO DE ALIMENTOS LTDA", "status": "pendente"}], "total": 4, "feito": 0, "pendente": 4, "demandTag": "Relatório"}, {"categoria": "Pré Evento", "demanda": "Email Marketing", "month": 8, "day": 20, "clientes": [{"nome": "ACACIA COMERCIO DE BEBIDAS LTDA", "status": "pendente"}, {"nome": "LARANJEIRA REPRESENTACOES LTDA", "status": "pendente"}, {"nome": "QUALIPET INDUSTRIA E COMERCIO DE PRODUTOS PARA ANIMAIS LTDA", "status": "pendente"}, {"nome": "FRITOP INDUSTRIA E COMERCIO DE ALIMENTOS LTDA", "status": "pendente"}, {"nome": "PETLOOK PRODUTOS DE HIGIENE E ACESSORIOS LTDA", "status": "pendente"}], "total": 5, "feito": 0, "pendente": 5, "demandTag": "Email Marketing"}, {"categoria": "Pré Evento", "demanda": "Email Marketing", "month": 8, "day": 21, "clientes": [{"nome": "BONA CHIPS INDUSTRIA E COMERCIO DE ALIMENTOS LTDA", "status": "pendente"}, {"nome": "TOPMED INTERMEDIACAO DE NEGOCIOS LTDA", "status": "pendente"}, {"nome": "Flaibam Comercio de Alimentos Ltda", "status": "pendente"}, {"nome": "BELA POR NATUREZA COMERCIO E MANIPULACAO DE COSMETICOS", "status": "pendente"}, {"nome": "Apis Vida Industria e Comercio de Produtos Farmaceuticos Ltda", "status": "pendente"}], "total": 5, "feito": 0, "pendente": 5, "demandTag": "Email Marketing"}, {"categoria": "Pré Evento", "demanda": "Email Marketing", "month": 8, "day": 24, "clientes": [{"nome": "TOCANE LABORATORIOS DE COSMETICOS SUSTENTAVEIS", "status": "pendente"}, {"nome": "Industria de Conservas Guamiranga LTDA", "status": "pendente"}, {"nome": "SANFARMA", "status": "pendente"}, {"nome": "FUCHS", "status": "pendente"}], "total": 4, "feito": 0, "pendente": 4, "demandTag": "Email Marketing"}, {"categoria": "Durante o Evento", "demanda": "Painel / Entrevista / Conteúdo no Palco", "month": 8, "day": 25, "clientes": [{"nome": "NSF BRAZIL TIC LTDA", "status": "pendente"}, {"nome": "ELEVENTIAL CONSULTORIA EM TECNOLOGIA DA INFORMACAO LTDA", "status": "pendente"}], "total": 2, "feito": 0, "pendente": 2, "demandTag": "Conteúdo de Palco"}, {"categoria": "Durante o Evento", "demanda": "Post Collab", "month": 8, "day": 25, "clientes": [{"nome": "Start Quimica", "status": "pendente"}], "total": 1, "feito": 0, "pendente": 1, "demandTag": "Posts"}, {"categoria": "Durante o Evento", "demanda": "Stories", "month": 8, "day": 26, "clientes": [{"nome": "PDHB", "status": "pendente"}], "total": 1, "feito": 0, "pendente": 1, "demandTag": "Stories"}, {"categoria": "Pós Evento", "demanda": "Post Collab", "month": 9, "day": 1, "clientes": [{"nome": "ACACIA COMERCIO DE BEBIDAS LTDA", "status": "pendente"}, {"nome": "LARANJEIRA REPRESENTACOES LTDA", "status": "pendente"}, {"nome": "QUALIPET INDUSTRIA E COMERCIO DE PRODUTOS PARA ANIMAIS LTDA", "status": "pendente"}, {"nome": "FRITOP INDUSTRIA E COMERCIO DE ALIMENTOS LTDA", "status": "pendente"}], "total": 4, "feito": 0, "pendente": 4, "demandTag": "Posts"}, {"categoria": "Pós Evento", "demanda": "Post Collab", "month": 9, "day": 2, "clientes": [{"nome": "PETLOOK PRODUTOS DE HIGIENE E ACESSORIOS LTDA", "status": "pendente"}, {"nome": "BONA CHIPS INDUSTRIA E COMERCIO DE ALIMENTOS LTDA", "status": "pendente"}, {"nome": "TOPMED INTERMEDIACAO DE NEGOCIOS LTDA", "status": "pendente"}, {"nome": "Flaibam Comercio de Alimentos Ltda", "status": "pendente"}], "total": 4, "feito": 0, "pendente": 4, "demandTag": "Posts"}, {"categoria": "Pós Evento", "demanda": "Post Collab", "month": 9, "day": 3, "clientes": [{"nome": "BELA POR NATUREZA COMERCIO E MANIPULACAO DE COSMETICOS", "status": "pendente"}, {"nome": "TOCANE LABORATORIOS DE COSMETICOS SUSTENTAVEIS", "status": "pendente"}, {"nome": "Industria de Conservas Guamiranga LTDA", "status": "pendente"}, {"nome": "SANFARMA", "status": "pendente"}], "total": 4, "feito": 0, "pendente": 4, "demandTag": "Posts"}, {"categoria": "Pós Evento", "demanda": "Relatório Pós-Evento", "month": 9, "day": 4, "clientes": [{"nome": "BRICO BREAD ALIMENTOS LTDA EM RECUPERACAO JUDICIAL", "status": "pendente"}, {"nome": "NEOLAT COMERCIO DE LATICINIOS LTDA", "status": "pendente"}, {"nome": "NORONHA - INDUSTRIA E COMERCIO DE PESCADOS LTDA", "status": "pendente"}], "total": 3, "feito": 0, "pendente": 3, "demandTag": "Relatório"}, {"categoria": "Pós Evento", "demanda": "Email Marketing", "month": 9, "day": 7, "clientes": [{"nome": "ELEVENTIAL CONSULTORIA EM TECNOLOGIA DA INFORMACAO LTDA", "status": "pendente"}], "total": 1, "feito": 0, "pendente": 1, "demandTag": "Email Marketing"}, {"categoria": "Pós Evento", "demanda": "Reels / Cortes de Vídeo", "month": 9, "day": 8, "clientes": [{"nome": "NSF BRAZIL TIC LTDA", "status": "pendente"}], "total": 1, "feito": 0, "pendente": 1, "demandTag": "Reels"}, {"categoria": "Pós Evento", "demanda": "Stories", "month": 9, "day": 9, "clientes": [{"nome": "Apis Vida Industria e Comercio de Produtos Farmaceuticos Ltda", "status": "pendente"}], "total": 1, "feito": 0, "pendente": 1, "demandTag": "Stories"}, {"categoria": "Pré Evento", "demanda": "Logos (todos os tipos)", "month": 7, "day": 27, "clientes": [{"nome": "ACACIA COMERCIO DE BEBIDAS LTDA", "status": "feito", "tipo": "Logo na planta e no site"}, {"nome": "LARANJEIRA REPRESENTACOES LTDA", "status": "feito", "tipo": "Logo na planta e no site"}, {"nome": "QUALIPET INDUSTRIA E COMERCIO DE PRODUTOS PARA ANIMAIS LTDA", "status": "feito", "tipo": "Logo na planta e no site"}, {"nome": "FRITOP INDUSTRIA E COMERCIO DE ALIMENTOS LTDA", "status": "feito", "tipo": "Logo na planta e no site"}, {"nome": " LATICINIOS SANTA RITA LTDA", "status": "pendente", "tipo": "Logo na planta e no site"}, {"nome": "BISCOITONE INDUSTRIA DE PRODUTOS ALIMENTICIOS LTDA", "status": "pendente", "tipo": "Logo na planta e no site"}, {"nome": "PETLOOK PRODUTOS DE HIGIENE E ACESSORIOS LTDA", "status": "feito", "tipo": "Logo na planta e no site"}, {"nome": "BONA CHIPS INDUSTRIA E COMERCIO DE ALIMENTOS LTDA", "status": "feito", "tipo": "Logo na planta e no site"}, {"nome": "RIVIERA PRESERVACAO E FABRICACAO DE PESCADOS LTDA", "status": "feito", "tipo": "Logo na planta e no site"}, {"nome": "TOPMED INTERMEDIACAO DE NEGOCIOS LTDA", "status": "feito", "tipo": "Logo na planta e no site"}, {"nome": "Flaibam Comercio de Alimentos Ltda", "status": "feito", "tipo": "Logo na planta e no site"}, {"nome": "BELA POR NATUREZA COMERCIO E MANIPULACAO DE COSMETICOS", "status": "feito", "tipo": "Logo na planta e no site"}, {"nome": "Apis Vida Industria e Comercio de Produtos Farmaceuticos Ltda", "status": "feito", "tipo": "Logo na planta e no site"}, {"nome": "PIBE SAUDE BEM & ESTAR E CONFECCOES LTDA", "status": "feito", "tipo": "Logo na planta e no site"}, {"nome": "FRUSELVA AMÉRICA SPA", "status": "feito", "tipo": "Logo na planta e no site"}, {"nome": "BUFALO INDUSTRIA E COMERCIO DE PRODUTOS QUIMICOS LTDA", "status": "feito", "tipo": "Logo na planta e no site"}, {"nome": "COOPERATIVA AGROINDUSTRIAL ALEGRETE LTDA", "status": "feito", "tipo": "Logo na planta e no site"}, {"nome": "PORKAO INDUSTRIA DE ALIMENTOS LTDA", "status": "feito", "tipo": "Logo na planta e no site"}, {"nome": "TOCANE LABORATORIOS DE COSMETICOS SUSTENTAVEIS", "status": "feito", "tipo": "Logo na planta e no site"}, {"nome": "Cerealista Miraguaia Ltda", "status": "feito", "tipo": "Logo na planta e no site"}, {"nome": "Rb Exportacao, Importacao, Comercio e Industria de Produtos de\nBarbear Ltda", "status": "feito", "tipo": "Logo na planta e no site"}, {"nome": "BUFALO COMÉRCIO E INDUSTRIA DE PRODUTOS QUIMICOS LTDA", "status": "feito", "tipo": "Logo na planta e no site"}, {"nome": "ANCAR INDUSTRIA QUIMICA LTDA\n", "status": "feito", "tipo": "Logo na planta e no site"}, {"nome": "Amakha", "status": "feito", "tipo": "Logo na planta e no site"}, {"nome": "BON SAUCE INDUSTRIA E COMERCIO DE ALIMENTOS LTDA", "status": "feito", "tipo": "Logo na planta e no site"}, {"nome": "Start Quimica", "status": "feito", "tipo": "Logo na planta e no site"}, {"nome": "Industria de Conservas Guamiranga LTDA", "status": "feito", "tipo": "Logo na planta e no site"}, {"nome": "SANFARMA", "status": "feito", "tipo": "Logo na planta e no site"}, {"nome": "Primicias do Brasil", "status": "feito", "tipo": "Logo na planta e no site"}, {"nome": "BM3 IMPORTACAO E EXPORTACAO LTDA", "status": "feito", "tipo": "Logo na planta e no site"}, {"nome": "J.P. PEREIRA LTDA", "status": "feito", "tipo": "Logo na planta e no site"}, {"nome": "F.H.O.M", "status": "feito", "tipo": "Logo na planta e no site"}, {"nome": "NUTRISENIOR", "status": "feito", "tipo": "Logo na planta e no site"}, {"nome": "Greenpeople", "status": "feito", "tipo": "Logo na planta e no site"}, {"nome": "Demello Alimentos", "status": "feito", "tipo": "Logo na planta e no site"}, {"nome": "Catuai do Brasil", "status": "feito", "tipo": "Logo na planta e no site"}, {"nome": "Landhs", "status": "feito", "tipo": "Logo na planta e no site"}, {"nome": "Higiecare\n", "status": "feito", "tipo": "Logo na planta e no site"}, {"nome": "USINA GRANELLI ", "status": "feito", "tipo": "Logo na planta e no site"}, {"nome": "ADKO ALIMENTOS", "status": "feito", "tipo": "Logo na planta e no site"}, {"nome": "GLOBAL MARCAS", "status": "feito", "tipo": "Logo na planta e no site"}, {"nome": "Snack Show", "status": "feito", "tipo": "Logo na planta e no site"}, {"nome": "Elabore Cosméticos", "status": "feito", "tipo": "Logo na planta e no site"}, {"nome": "BENTONISA\n", "status": "feito", "tipo": "Logo na planta e no site"}, {"nome": "ORANGE BOWL", "status": "feito", "tipo": "Logo na planta e no site"}, {"nome": "Cromo Florais 360", "status": "feito", "tipo": "Logo na planta e no site"}, {"nome": "ACACIA COMERCIO DE BEBIDAS LTDA", "status": "pendente", "tipo": "Logo em materiais gerais"}, {"nome": "LARANJEIRA REPRESENTACOES LTDA", "status": "pendente", "tipo": "Logo em materiais gerais"}, {"nome": "QUALIPET INDUSTRIA E COMERCIO DE PRODUTOS PARA ANIMAIS LTDA", "status": "pendente", "tipo": "Logo em materiais gerais"}, {"nome": "FRITOP INDUSTRIA E COMERCIO DE ALIMENTOS LTDA", "status": "pendente", "tipo": "Logo em materiais gerais"}, {"nome": "PETLOOK PRODUTOS DE HIGIENE E ACESSORIOS LTDA", "status": "pendente", "tipo": "Logo em materiais gerais"}, {"nome": "BONA CHIPS INDUSTRIA E COMERCIO DE ALIMENTOS LTDA", "status": "pendente", "tipo": "Logo em materiais gerais"}, {"nome": "TOPMED INTERMEDIACAO DE NEGOCIOS LTDA", "status": "pendente", "tipo": "Logo em materiais gerais"}, {"nome": "Flaibam Comercio de Alimentos Ltda", "status": "pendente", "tipo": "Logo em materiais gerais"}, {"nome": "BELA POR NATUREZA COMERCIO E MANIPULACAO DE COSMETICOS", "status": "pendente", "tipo": "Logo em materiais gerais"}, {"nome": "ELEVENTIAL CONSULTORIA EM TECNOLOGIA DA INFORMACAO LTDA", "status": "pendente", "tipo": "Logo em materiais gerais"}, {"nome": "TOCANE LABORATORIOS DE COSMETICOS SUSTENTAVEIS", "status": "pendente", "tipo": "Logo em materiais gerais"}, {"nome": "Industria de Conservas Guamiranga LTDA", "status": "pendente", "tipo": "Logo em materiais gerais"}, {"nome": "SANFARMA", "status": "pendente", "tipo": "Logo em materiais gerais"}, {"nome": "Higiecare\n", "status": "feito", "tipo": "Logo em materiais gerais"}, {"nome": "IDEAL COSMÉTICOS", "status": "pendente", "tipo": "Logo em materiais gerais"}, {"nome": "BENTONISA\n", "status": "feito", "tipo": "Logo em materiais gerais"}, {"nome": "MATIOLA ALIMENTOS", "status": "pendente", "tipo": "Logo em materiais gerais"}, {"nome": "ACACIA COMERCIO DE BEBIDAS LTDA", "status": "feito", "tipo": "Logo com link no site da feira"}, {"nome": "LARANJEIRA REPRESENTACOES LTDA", "status": "feito", "tipo": "Logo com link no site da feira"}, {"nome": "QUALIPET INDUSTRIA E COMERCIO DE PRODUTOS PARA ANIMAIS LTDA", "status": "feito", "tipo": "Logo com link no site da feira"}, {"nome": "FRITOP INDUSTRIA E COMERCIO DE ALIMENTOS LTDA", "status": "feito", "tipo": "Logo com link no site da feira"}, {"nome": "PETLOOK PRODUTOS DE HIGIENE E ACESSORIOS LTDA", "status": "feito", "tipo": "Logo com link no site da feira"}, {"nome": "BONA CHIPS INDUSTRIA E COMERCIO DE ALIMENTOS LTDA", "status": "feito", "tipo": "Logo com link no site da feira"}, {"nome": "TOPMED INTERMEDIACAO DE NEGOCIOS LTDA", "status": "feito", "tipo": "Logo com link no site da feira"}, {"nome": "Flaibam Comercio de Alimentos Ltda", "status": "feito", "tipo": "Logo com link no site da feira"}, {"nome": "BELA POR NATUREZA COMERCIO E MANIPULACAO DE COSMETICOS", "status": "feito", "tipo": "Logo com link no site da feira"}, {"nome": "TOCANE LABORATORIOS DE COSMETICOS SUSTENTAVEIS", "status": "feito", "tipo": "Logo com link no site da feira"}, {"nome": "Industria de Conservas Guamiranga LTDA", "status": "feito", "tipo": "Logo com link no site da feira"}, {"nome": "SANFARMA", "status": "feito", "tipo": "Logo com link no site da feira"}, {"nome": "Higiecare\n", "status": "feito", "tipo": "Logo com link no site da feira"}, {"nome": "IDEAL COSMÉTICOS", "status": "feito", "tipo": "Logo com link no site da feira"}, {"nome": "BENTONISA\n", "status": "feito", "tipo": "Logo com link no site da feira"}, {"nome": "MATIOLA ALIMENTOS", "status": "pendente", "tipo": "Logo com link no site da feira"}], "total": 79, "feito": 61, "pendente": 18, "demandTag": "Logos"}], "months": [{"month": 7, "name": "Julho", "weeks": [[0, 0, 1, 2, 3, 4, 5], [6, 7, 8, 9, 10, 11, 12], [13, 14, 15, 16, 17, 18, 19], [20, 21, 22, 23, 24, 25, 26], [27, 28, 29, 30, 31, 0, 0]]}, {"month": 8, "name": "Agosto", "weeks": [[0, 0, 0, 0, 0, 1, 2], [3, 4, 5, 6, 7, 8, 9], [10, 11, 12, 13, 14, 15, 16], [17, 18, 19, 20, 21, 22, 23], [24, 25, 26, 27, 28, 29, 30], [31, 0, 0, 0, 0, 0, 0]]}, {"month": 9, "name": "Setembro", "weeks": [[0, 1, 2, 3, 4, 5, 6], [7, 8, 9, 10, 11, 12, 13], [14, 15, 16, 17, 18, 19, 20], [21, 22, 23, 24, 25, 26, 27], [28, 29, 30, 0, 0, 0, 0]]}]};
+
+const ORIGEM_HEX = { 'Drylock': '#0FC2C0', 'Zinho': '#9B237F', 'Expositores': '#7C5DA7', 'Super Varejo': '#C487F7', 'SP Negócios': '#C9962C', 'GS1': '#3E6D9C' };
+let activeOrigem = 'Todos';
+let activeDemand = 'Todas';
+const WEEKDAYS = ['Seg','Ter','Qua','Qui','Sex','Sáb','Dom'];
+const EVENT_DAYS = {8: [25,26]};
+const MES_NOME = {7:'julho',8:'agosto',9:'setembro'};
+
+// ---- Conclusion state (persisted via window.storage if available, else in-memory) ----
+let concludedState = {};
+let storageReady = false;
+
+async function loadConcludedState() {
+  try {
+    if (window.storage) {
+      const res = await window.storage.get('concluidos', false);
+      if (res && res.value) concludedState = JSON.parse(res.value);
+      storageReady = true;
+    }
+  } catch (e) { /* key not found or storage unavailable, start empty */ }
+}
+async function saveConcludedState() {
+  try {
+    if (window.storage) await window.storage.set('concluidos', JSON.stringify(concludedState), false);
+  } catch (e) { /* ignore - session only */ }
+}
+
+function itemId(kind, idx) { return kind + ':' + idx; }
+function isConcluded(kind, idx, fallback) {
+  const id = itemId(kind, idx);
+  if (id in concludedState) return concludedState[id];
+  return !!fallback;
+}
+
+function isWeekend(year, month, day) {
+  const dt = new Date(year, month-1, day);
+  const wd = dt.getDay();
+  return wd === 0 || wd === 6;
+}
+
+function passesDemand(e) {
+  return activeDemand === 'Todas' || e.demandTag === activeDemand;
+}
+
+function partnerEventsForDay(month, day) {
+  return DATA.events.filter(e => e.month === month && e.day === day && (activeOrigem === 'Todos' || e.origem === activeOrigem) && passesDemand(e));
+}
+function exhibitorForDay(month, day) {
+  if (activeOrigem !== 'Todos' && activeOrigem !== 'Expositores') return [];
+  return DATA.exhibitorEvents.filter(e => e.month === month && e.day === day && passesDemand(e));
+}
+function svForDay(month, day) {
+  if (activeOrigem !== 'Todos' && activeOrigem !== 'Super Varejo') return [];
+  return DATA.svEvents.filter(e => e.month === month && e.day === day && passesDemand(e));
+}
+function spForDay(month, day) {
+  if (activeOrigem !== 'Todos' && activeOrigem !== 'SP Negócios') return [];
+  return DATA.spEvents.filter(e => e.month === month && e.day === day && passesDemand(e));
+}
+function gs1ForDay(month, day) {
+  if (activeOrigem !== 'Todos' && activeOrigem !== 'GS1') return [];
+  return DATA.gs1Events.filter(e => e.month === month && e.day === day && passesDemand(e));
+}
+
+function shortLabel(text, max) {
+  return text.length > max ? text.slice(0, max - 1) + '…' : text;
+}
+
+function renderDemandFilters() {
+  const tagsSet = new Set();
+  [DATA.events, DATA.svEvents, DATA.spEvents, DATA.gs1Events, DATA.exhibitorEvents].forEach(list => {
+    list.forEach(e => tagsSet.add(e.demandTag));
+  });
+  const tags = Array.from(tagsSet).sort();
+  const wrap = document.getElementById('demandFilterBar');
+  wrap.innerHTML = `<div class="filter-chip demand-chip active" data-demand="Todas">Todas</div>` +
+    tags.map(t => `<div class="filter-chip demand-chip" data-demand="${t}">${t}</div>`).join('');
+  wrap.querySelectorAll('.demand-chip').forEach(chip => {
+    chip.addEventListener('click', () => {
+      wrap.querySelectorAll('.demand-chip').forEach(c => c.classList.remove('active'));
+      chip.classList.add('active');
+      activeDemand = chip.dataset.demand;
+      renderMonths();
+    });
+  });
+}
+
+function renderMonths() {
+  const wrap = document.getElementById('monthsWrap');
+  wrap.innerHTML = '';
+  DATA.months.forEach(m => {
+    const card = document.createElement('div');
+    card.className = 'month-card';
+    let html = `<h3>${m.name} 2026</h3><div class="weekday-row">`;
+    WEEKDAYS.forEach(w => html += `<div>${w}</div>`);
+    html += '</div>';
+    m.weeks.forEach(week => {
+      html += '<div class="day-row">';
+      week.forEach(day => {
+        if (day === 0) {
+          html += '<div class="day-cell empty"></div>';
+        } else {
+          const evs = partnerEventsForDay(m.month, day);
+          const exh = exhibitorForDay(m.month, day);
+          const svs = svForDay(m.month, day);
+          const sps = spForDay(m.month, day);
+          const gs1s = gs1ForDay(m.month, day);
+          const isEventDay = (EVENT_DAYS[m.month] || []).includes(day);
+          const weekend = isWeekend(2026, m.month, day);
+          let cls = 'day-cell';
+          if (weekend) cls += ' weekend';
+          if (evs.length || exh.length || svs.length || sps.length || gs1s.length) cls += ' has-events';
+          if (isEventDay) cls += ' event-day';
+          let items = '';
+          evs.forEach(e => {
+            const idx = DATA.events.indexOf(e);
+            const done = isConcluded('partner', idx, false);
+            items += `<div class="mini-item${done?' concluido':''}" style="background:${done?'':ORIGEM_HEX[e.origem]}" title="${e.entregavel.replace(/"/g,'&quot;')}" onclick="openPartnerModal(${idx})">${shortLabel(e.entregavel, 46)}</div>`;
+          });
+          exh.forEach((e) => {
+            const idx = DATA.exhibitorEvents.indexOf(e);
+            const done = isConcluded('exhibitor', idx, e.pendente === 0);
+            items += `<div class="mini-item${done?' concluido':''}" style="background:${done?'':ORIGEM_HEX['Expositores']}" onclick="openExhibitorModal(${idx})" title="${e.demanda} — ${e.total} clientes">${e.total}x ${shortLabel(e.demanda, 30)}</div>`;
+          });
+          svs.forEach((e) => {
+            const idx = DATA.svEvents.indexOf(e);
+            const done = isConcluded('sv', idx, false);
+            items += `<div class="mini-item${done?' concluido':''}" style="background:${done?'':ORIGEM_HEX['Super Varejo']}; color:${done?'':'#2a1f42'};" onclick="openSVModal(${idx})" title="${e.entregavel.replace(/"/g,'&quot;')}">${shortLabel(e.entregavel, 40)}</div>`;
+          });
+          sps.forEach((e) => {
+            const idx = DATA.spEvents.indexOf(e);
+            const done = isConcluded('sp', idx, false);
+            items += `<div class="mini-item${done?' concluido':''}" style="background:${done?'':ORIGEM_HEX['SP Negócios']}" onclick="openSPModal(${idx})" title="${e.entregavel.replace(/"/g,'&quot;')}">${shortLabel(e.entregavel, 40)}</div>`;
+          });
+          gs1s.forEach((e) => {
+            const idx = DATA.gs1Events.indexOf(e);
+            const done = isConcluded('gs1', idx, false);
+            items += `<div class="mini-item${done?' concluido':''}" style="background:${done?'':ORIGEM_HEX['GS1']}" onclick="openGS1Modal(${idx})" title="${e.entregavel.replace(/"/g,'&quot;')}">${shortLabel(e.entregavel, 40)}</div>`;
+          });
+          html += `<div class="${cls}">
+                     <div class="day-num">${day}${isEventDay ? '<span class="tag-evento">Evento</span>' : ''}</div>
+                     ${items}
+                   </div>`;
+        }
+      });
+      html += '</div>';
+    });
+    card.innerHTML = html;
+    wrap.appendChild(card);
+  });
+}
+
+let currentModalKind = null;
+let currentModalIdx = null;
+
+function baseModal(kind, idx, origem, title, sub, fallbackDone) {
+  currentModalKind = kind; currentModalIdx = idx;
+  document.getElementById('modalOrigem').textContent = origem;
+  document.getElementById('modalOrigem').style.color = ORIGEM_HEX[origem] || 'var(--turquesa-escuro)';
+  document.getElementById('modalTitle').textContent = title;
+  document.getElementById('modalSub').textContent = sub;
+  document.getElementById('modalMeta').innerHTML = '';
+  document.getElementById('modalClients').innerHTML = '';
+  const done = isConcluded(kind, idx, fallbackDone);
+  const btn = document.getElementById('concludeBtn');
+  btn.textContent = done ? 'Concluído ✓ (clique para reverter)' : 'Marcar como concluído';
+  btn.classList.toggle('is-done', done);
+  document.getElementById('modalOverlay').classList.add('open');
+}
+
+document.getElementById('concludeBtn').addEventListener('click', () => {
+  const id = itemId(currentModalKind, currentModalIdx);
+  const current = concludedState[id];
+  const currentlyDone = current !== undefined ? current : (currentModalKind === 'exhibitor' ? DATA.exhibitorEvents[currentModalIdx].pendente === 0 : false);
+  concludedState[id] = !currentlyDone;
+  saveConcludedState();
+  const btn = document.getElementById('concludeBtn');
+  btn.textContent = !currentlyDone ? 'Concluído ✓ (clique para reverter)' : 'Marcar como concluído';
+  btn.classList.toggle('is-done', !currentlyDone);
+  renderMonths();
+});
+
+function openPartnerModal(idx) {
+  const e = DATA.events[idx];
+  baseModal('partner', idx, e.origem, e.entregavel, `${e.day} de ${MES_NOME[e.month]} de 2026${e.prefixo ? ' · ' + e.prefixo : ''} · ${e.demandTag}`, false);
+  let meta = '';
+  if (e.direcao) meta += `<div><strong>Direção:</strong> ${e.direcao}</div>`;
+  if (e.responsavel) meta += `<div><strong>Responsável:</strong> ${e.responsavel}</div>`;
+  if (e.obs) meta += `<div style="margin-top:6px;"><strong>Observações:</strong> ${e.obs}</div>`;
+  document.getElementById('modalMeta').innerHTML = meta;
+}
+
+function openExhibitorModal(idx) {
+  const e = DATA.exhibitorEvents[idx];
+  baseModal('exhibitor', idx, 'Expositores', e.demanda, `${e.categoria} · Sugestão de disparo: ${e.day} de ${MES_NOME[e.month]} de 2026 · ${e.demandTag}`, e.pendente === 0);
+  document.getElementById('modalMeta').innerHTML = `<div><strong>${e.total}</strong> clientes neste lote &nbsp;·&nbsp; <span style="color:#92400E;">${e.feito} já entregues</span> &nbsp;·&nbsp; ${e.pendente} pendentes</div>`;
+  document.getElementById('modalClients').innerHTML = e.clientes.map(c => {
+    const label = c.tipo ? `${c.nome} (${c.tipo.replace('Logo ','').replace('na planta e no site','planta').replace('em materiais gerais','materiais').replace('com link no site da feira','site')})` : c.nome;
+    return `<span class="client-chip${c.status==='feito' ? ' feito' : ''}">${label}</span>`;
+  }).join('');
+}
+
+function openSVModal(idx) {
+  const e = DATA.svEvents[idx];
+  baseModal('sv', idx, 'Super Varejo', e.entregavel, `${e.fase} · ${e.day} de ${MES_NOME[e.month]} de 2026 · ${e.demandTag}`, false);
+  let meta = '';
+  if (e.direcao) meta += `<div><strong>Direção:</strong> ${e.direcao}</div>`;
+  if (e.obs) meta += `<div style="margin-top:6px;"><strong>Observações:</strong> ${e.obs}</div>`;
+  document.getElementById('modalMeta').innerHTML = meta;
+}
+
+function openSPModal(idx) {
+  const e = DATA.spEvents[idx];
+  baseModal('sp', idx, 'SP Negócios', e.entregavel, `Sugestão de data: ${e.day} de ${MES_NOME[e.month]} de 2026 · ${e.demandTag}`, false);
+  let meta = '';
+  if (e.direcao) meta += `<div><strong>Direção:</strong> ${e.direcao}</div>`;
+  if (e.obs) meta += `<div style="margin-top:6px;"><strong>Observações:</strong> ${e.obs}</div>`;
+  document.getElementById('modalMeta').innerHTML = meta;
+}
+
+function openGS1Modal(idx) {
+  const e = DATA.gs1Events[idx];
+  baseModal('gs1', idx, 'GS1', e.entregavel, `Sugestão de data: ${e.day} de ${MES_NOME[e.month]} de 2026 · ${e.demandTag}`, false);
+  let meta = '';
+  if (e.direcao) meta += `<div><strong>Direção:</strong> ${e.direcao}</div>`;
+  if (e.obs) meta += `<div style="margin-top:6px;"><strong>Observações:</strong> ${e.obs}</div>`;
+  document.getElementById('modalMeta').innerHTML = meta;
+}
+
+document.getElementById('modalClose').addEventListener('click', () => document.getElementById('modalOverlay').classList.remove('open'));
+document.getElementById('modalOverlay').addEventListener('click', (ev) => {
+  if (ev.target.id === 'modalOverlay') document.getElementById('modalOverlay').classList.remove('open');
+});
+
+document.getElementById('filterBar').querySelectorAll('.filter-chip').forEach(chip => {
+  chip.addEventListener('click', () => {
+    document.getElementById('filterBar').querySelectorAll('.filter-chip').forEach(c => c.classList.remove('active'));
+    chip.classList.add('active');
+    activeOrigem = chip.dataset.origem;
+    renderMonths();
+  });
+});
+
+document.querySelectorAll('.tab-btn').forEach(btn => {
+  btn.addEventListener('click', () => {
+    document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
+    document.getElementById('tab-' + btn.dataset.tab).classList.add('active');
+  });
+});
+
+document.querySelectorAll('.faq-item').forEach(item => {
+  item.querySelector('.faq-q').addEventListener('click', () => item.classList.toggle('open'));
+});
+
+function copyCred() {
+  const text = document.getElementById('credLink').textContent;
+  navigator.clipboard.writeText(text).then(() => {
+    event.target.textContent = 'Copiado ✓';
+    setTimeout(() => { event.target.textContent = 'Copiar link'; }, 1500);
+  });
+}
+
+(async function init() {
+  await loadConcludedState();
+  renderDemandFilters();
+  renderMonths();
+})();
+</script>
+
+</body>
+</html>
